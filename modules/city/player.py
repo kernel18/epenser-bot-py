@@ -8,7 +8,7 @@ import modules.city.globals as global_values
 class Unit:
 	def __init__(self, owner):
 		self.owner = owner
-		self.level = 0 # 0: None, 1: Peasant, 2: Knight, 3: Lancer
+		self.level = 0
 		self.used = False
 		self.decoration = random.choice(global_values.tile_decorations)
 
@@ -18,7 +18,6 @@ class Player:
 	index = -1
 	power_active = False
 	revenue = 0
-	cost = 0
 	bank = 0
 
 	def __init__(self, game, user):
@@ -26,7 +25,7 @@ class Player:
 		self.user = user
 		self.variables = {}
 
-	def spawn(self, amount):
+	def spawn(self, amount, index):
 		if amount:
 			for i in range(amount):
 				while True:
@@ -42,22 +41,21 @@ class Player:
 				for x in range(5):
 					if self.game.map[y][x] == None:
 						self.game.map[y][x] = Unit(self.index)
+						amount += 1
+
+		self.index = index
+		self.bank = amount * 2 + self.game.costs["creation"] * int(.5 + index*.5 if index else 0)
 
 	def update_revenue(self, update_bank=False):
 		self.revenue = 0
-		self.cost = 0
-		units = [[], [], []]
 
 		for y in range(5):
 			for x in range(5):
 				if self.game.map[y][x].owner == self.index:
 					self.revenue += 1
-					self.cost += self.game.costs["upkeep"][self.game.map[y][x].level]
-					if self.game.map[y][x].level:
-						units[self.game.map[y][x].level - 1].append((x, y))
 
 		if update_bank:
-			self.bank = self.revenue - self.cost
+			self.bank += self.revenue
 
 	def on_turn_start(self):
 		self.update_revenue(True)

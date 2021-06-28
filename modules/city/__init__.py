@@ -56,6 +56,16 @@ class MainClass(BaseClassPython):
 			global_values.games[message.channel.id] = Game(self,message=message)
 			await global_values.games[message.channel.id].on_creation(message)
 
+	async def com_show(self, message, args, kwargs):
+		if message.channel.id not in global_values.games:
+			await message.channel.send("Il n'y a pas de partie en cours dans le salon")
+		else:
+			game = global_values.games[message.channel.id]
+			if game.turn >= 0:
+				await game.game_message.delete(True)
+				await game.controls_message.delete()
+				await game.send_info()
+
 	# Réitinitialise et supprime la partie
 	async def com_reset(self, message, args, kwargs):
 		if message.channel.id in global_values.games:
@@ -112,22 +122,29 @@ class MainClass(BaseClassPython):
 		)
 
 		embed.add_field(name=":small_blue_diamond: Début de partie :small_blue_diamond:", inline=False, value="""
-Le jeu se déroule sur un plateau de 25 cases en 5x5. Chaque joueur commence à un nombre égal de cases en sa possession,réparties aléatoirement sur le terrain (le surplus va au dernier joueur).
+Le jeu se déroule sur un plateau de 25 cases en 5x5. Chaque joueur commence à un nombre égal de cases en sa possession, réparties aléatoirement sur le terrain (le surplus va au dernier joueur), et avec 20 :coin:.
 		""")
 
 		embed.add_field(name=":small_blue_diamond: Déroulement d’un tour :small_blue_diamond:", inline=False, value="""
-Le joueur clique sur une case soit qui lui appartient, soit adjacente à une case qui lui appartient (les diagonales ne comptent pas):
-- S'il choisit une case qui lui appartient, il crée une unité (🙎) sur cette case. Cette unité ne peut pas se déplacer avant le prochain tour. S'il y a déjà une unité, il l'améliore si possible (🙎 devient 🧑‍🌾, 🧑‍🌾 devient 🧙).
-- S'il choisit une case adverse et a une unité adjacente, et qu'il n'y a pas d'unité de force égale ou supérieure sur la case, elle se déplace sur la case et la capture. Chaque unité ne peut se déplacer qu'une fois par tour.
+Le joueur gagne 1 :coin: pour chaque case qui lui appartient. Il peut ensuite cliquer sur une des cases disponibles pour réaliser une des actions suivantes (seuls les cases avec des actions possibles sont disponibles):
+- Créer une nouvelle armée pour 12 :coin:,
+- Améliorer une armée existante pour le même prix,
+- Déplacer une armée adjacente sur cette case. Si la case est occupée par une armée adverse, l'attaquant doit être de force égale ou supérieure:
+--- S'ils sont de force égale, le défenseur et l'attaquant se détruise sans capture de la case,
+--- Si l'attaquant est plus fort, il détruit le défenseur et caputre la case sans perdre de force.
+
+Si plusieurs actions sont possibles sur la même case, le joueur choisira (même case pour la création/amélioration et l'armée à déplacer sinon).
+
+Les armées ne peuvent pas se déplacer le premier tour et ont une force maximale de 5. Chacune ne peut se déplacer qu'une seule fois sur une case ennemie.
 		""")
 
-		embed.add_field(name=":small_blue_diamond: Coûts :small_blue_diamond:", inline=False, value="""
-Chaque unité a un coût:
-- **🙎 Citoyen:** 2 cases
-- **🧑‍🌾 Paysan:** 4 cases
-- **🧙 Mage:** 6 cases
-Le coût total des unités est retiré au nombre de cases qui appartienne au joueur au début du tour. Si le résultat est négatif, il devra choisir des unités à tuer pour leur coût de maintien jusqu'à ce qu'il soit positif.
-		""")
+# 		embed.add_field(name=":small_blue_diamond: Coûts :small_blue_diamond:", inline=False, value="""
+# Chaque unité a un coût:
+# - **🙎 Citoyen:** 7 :coin:
+# - **🧑‍🌾 Paysan:** 8 :coin:
+# - **🧙 Mage:** 10 :coin:
+# Le coût total des unités est retiré au nombre de cases qui appartienne au joueur au début du tour. Si le résultat est négatif, il devra choisir des unités à tuer pour leur coût de maintien jusqu'à ce qu'il soit positif.
+# 		""")
 
 		embed.add_field(name=":small_blue_diamond: But du jeu :small_blue_diamond:", inline=False, value="""
 Le joueur qui contrôle toutes les cases du plateau gagne.
